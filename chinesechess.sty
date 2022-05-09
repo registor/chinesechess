@@ -19,7 +19,7 @@
 %%
 \NeedsTeXFormat{LaTeX2e}[2020/10/01]
 \RequirePackage{expl3}
-\ProvidesExplPackage{chinesechess}{2022-05-06}{v1.1.0}
+\ProvidesExplPackage{chinesechess}{2022-05-09}{v1.2.0}
   {Typeset Chinese chess with l3draw}
 
 \RequirePackage { l3keys2e, l3draw, xparse }
@@ -34,7 +34,7 @@
 % 棋盘排版命令用户接口
 % #1 星号命令，是否输出棋子
 % #2 棋盘类型、棋子类型等外观选项
-\NewDocumentCommand{\cchessboard}{ s O{} }
+\NewDocumentCommand{\cchessboard}{ s o }
   {
     \group_begin:
       % 星号命令是否带棋子
@@ -44,8 +44,19 @@
         }{
           \bool_set_true:N \l__cchess_board_pieces_bool
         }
-      % 选项设置
-      \keys_set:nn { cchess } { #2 }
+
+      \IfNoValueF { #2 }
+        {
+          % 设置选项
+          \keys_set:nn { cchess } { #2 }
+          \bool_if:NF \g__cchess_draft_bool
+            {
+              % 构建棋盘
+              \__cchess_board_construct:
+              % 构建红黑各9个棋子
+              \__cchess_pieces_construct:
+            }
+        }
       \__cchess_board_output:
     \group_end:
   }
@@ -57,11 +68,21 @@
 %    黑棋：k=将,a=士,e/b=象,r=車,c=炮,n/h=馬,p=卒
 %    横向定位: a(0),b(1),c(2),d(3),e(4),f(5),g(6),h(7),i(8)
 %    纵向定位: a(0),b(1),c(2),d(3),e(4),f(5),g(6),h(7),i(8),j(9)
-\NewDocumentCommand{\cchessman}{ O{} m }
+\NewDocumentCommand{\cchessman}{ o m }
   {
     \group_begin:
-      % 选项设置
-      \keys_set:nn { cchess } { #1 }
+      % 设置选项
+      \IfNoValueF { #1}
+        {
+          \keys_set:nn { cchess } { #1 }
+          \bool_if:NF \g__cchess_draft_bool
+            {
+              % 构建棋盘
+              \__cchess_board_construct:
+              % 构建红黑各9个棋子
+              \__cchess_pieces_construct:
+            }
+        }
       \__cchess_manual_output:n { #2 }
     \group_end:
   }
@@ -69,29 +90,35 @@
 % 棋子字符复位
 \NewDocumentCommand{\resetpiece}{}
   {
-      % 定义棋子字符常量
-      \clist_map_inline:nn
-        {
-          { K } { 帥 }, % 帥\__cchess_symbol:n {"5E25}
-          { A } { 仕 }, % 仕\__cchess_symbol:n {"4ED5}
-          { E } { 相 }, % 相\__cchess_symbol:n {"76F8}
-          { B } { 相 }, % 相\__cchess_symbol:n {"76F8}
-          { H } { 马 }, % 马\__cchess_symbol:n {"9A6C}
-          { N } { 马 }, % 马\__cchess_symbol:n {"9A6C}
-          { R } { 车 }, % 车\__cchess_symbol:n {"8F66}
-          { C } { 砲 }, % 砲\__cchess_symbol:n {"7832}
-          { P } { 兵 }, % 兵\__cchess_symbol:n {"5175}
-          { k } { 將 }, % 將\__cchess_symbol:n {"5C07}
-          { a } { 士 }, % 士\__cchess_symbol:n {"58EB}
-          { e } { 象 }, % 象\__cchess_symbol:n {"8C61}
-          { b } { 象 }, % 象\__cchess_symbol:n {"8C61}
-          { h } { 馬 }, % 馬\__cchess_symbol:n {"99AC}
-          { n } { 馬 }, % 馬\__cchess_symbol:n {"99AC}
-          { r } { 車 }, % 車\__cchess_symbol:n {"8ECA}
-          { c } { 炮 }, % 炮\__cchess_symbol:n {"70AE}
-          { p } { 卒 }, % 卒\__cchess_symbol:n {"5352}
-        }
-        { \__cchess_piece_char_setup:nn ##1 }
+    % 定义棋子字符常量
+    \clist_map_inline:nn
+      {
+        { K } { 帥 }, % 帥\__cchess_symbol:n {"5E25}
+        { A } { 仕 }, % 仕\__cchess_symbol:n {"4ED5}
+        { E } { 相 }, % 相\__cchess_symbol:n {"76F8}
+        { B } { 相 }, % 相\__cchess_symbol:n {"76F8}
+        { H } { 马 }, % 马\__cchess_symbol:n {"9A6C}
+        { N } { 马 }, % 马\__cchess_symbol:n {"9A6C}
+        { R } { 车 }, % 车\__cchess_symbol:n {"8F66}
+        { C } { 砲 }, % 砲\__cchess_symbol:n {"7832}
+        { P } { 兵 }, % 兵\__cchess_symbol:n {"5175}
+        { k } { 將 }, % 將\__cchess_symbol:n {"5C07}
+        { a } { 士 }, % 士\__cchess_symbol:n {"58EB}
+        { e } { 象 }, % 象\__cchess_symbol:n {"8C61}
+        { b } { 象 }, % 象\__cchess_symbol:n {"8C61}
+        { h } { 馬 }, % 馬\__cchess_symbol:n {"99AC}
+        { n } { 馬 }, % 馬\__cchess_symbol:n {"99AC}
+        { r } { 車 }, % 車\__cchess_symbol:n {"8ECA}
+        { c } { 炮 }, % 炮\__cchess_symbol:n {"70AE}
+        { p } { 卒 }, % 卒\__cchess_symbol:n {"5352}
+      }
+      { \__cchess_piece_char_setup:nn ##1 }
+
+    \bool_if:NF \g__cchess_draft_bool
+      {
+        % 构建红黑各9个棋子
+        \__cchess_pieces_construct:
+      }
   }
 
 % 棋子字符设置命令
@@ -101,6 +128,12 @@
 \NewDocumentCommand{\piecechar}{ m m }
   {
     \__cchess_piece_char_setup:nn { #1 } { #2 }
+
+    \bool_if:NF \g__cchess_draft_bool
+      {
+        % 构建红黑各9个棋子
+        \__cchess_pieces_construct:
+      }
   }
 
 % 打谱环境初始化(仅用于setcchessman环境中)
@@ -155,11 +188,23 @@
 
 % 打谱排版环境用户接口
 % #1 棋盘类型、棋子类型等外观选项
-\NewDocumentEnvironment{ setcchessman }{ O{} +b }
+\NewDocumentEnvironment{ setcchessman }{ o +b }
   {
     \group_begin:
       \bool_set_false:N  \l__cchess_with_setman_bool
-      \keys_set:nn { cchess } { #1 }
+
+      % 设置选项
+      \IfNoValueF { #1}
+        {
+          \keys_set:nn { cchess } { #1 }
+          \bool_if:NF \g__cchess_draft_bool
+            {
+              % 构建棋盘
+              \__cchess_board_construct:
+              % 构建红黑各9个棋子
+              \__cchess_pieces_construct:
+            }
+        }
       \__cchess_setcchessman_pre_setup:n { #2 }
   }{
       \__cchess_setcchessman_post_setup:
@@ -168,10 +213,11 @@
 
 % 打谱排版星号环境用户接口，用于同时输出棋谱描述
 % #1 棋盘类型、棋子类型等外观选项
-\NewDocumentEnvironment{ setcchessman* }{ O{} +b }
+\NewDocumentEnvironment{ setcchessman* }{ o +b }
   {
     \group_begin:
       \bool_set_true:N  \l__cchess_with_setman_bool
+      % 设置选项
       \keys_set:nn { cchess } { #1 }
       \__cchess_setcchessman_pre_setup:n { #2 }
   }{
@@ -186,6 +232,7 @@
 \NewDocumentCommand{\printman}{ O{} >{\TrimSpaces} m } % 去掉两侧空格
   {
     \group_begin:
+      % 设置选项
       \keys_set:nn { cchess } { #1 }
       \__cchess_setman_print:n { #2 }
     \group_end:
@@ -222,44 +269,7 @@
 % 绘制棋盘时是否带有棋子标志
 \bool_new:N   \l__cchess_board_pieces_bool
 \bool_new:N   \l__cchess_with_setman_bool
-
-% 棋子类型
-\tl_new:N     \l__cchess_piece_box_type_tl
-% 棋子类型列表
-\clist_new:N  \g__cchess_piece_box_list_clist
-% 棋盘类型
-\tl_new:N     \l__cchess_board_type_tl
-% 棋盘类型列表
-\clist_new:N  \g__cchess_board_list_clist
-
-% 缩放方式
-\tl_new:N     \l__cchess_resize_method_tl
-% 缩放方式列表
-\clist_new:N  \g__cchess_resize_method_clist
-
-% 棋谱输出宽度
-\dim_new:N    \l__cchess_manual_width_dim
-% 棋谱输出高度
-\dim_new:N    \l__cchess_manual_height_dim
-% 棋盘宽度
-\dim_new:N    \l__cchess_board_width_dim
-% 棋盘高度
-\dim_new:N    \l__cchess_board_height_dim
-% 棋盘线线宽
-\dim_new:N    \l__cchess_board_linewidth_dim
-% 辅线线宽
-\dim_new:N    \l__cchess_cross_linewidth_dim
-% 辅线间距
-\dim_new:N    \l__cchess_cross_sep_dim
-% 棋子字符正方形外接圆半径
-\dim_new:N    \l__cchess_piece_box_radius_dim
-% 棋子外框线线宽
-\dim_new:N    \l__cchess_box_linewidth_dim
-% 临时尺寸变量
-\dim_new:N    \l__cchess_tmpa_dim
-\dim_new:N    \l__cchess_tmpb_dim
-\dim_new:N    \l__cchess_tmpc_dim
-\dim_new:N    \l__cchess_tmpd_dim
+\bool_new:N   \g__cchess_draft_bool
 
 % 棋子容器
 % 当前中国象棋主流软件的棋子代码，多沿用:
@@ -427,18 +437,56 @@
     \coffin_new:c { l_char_tmp #1 _coffin }
   }
 
+% 棋子类型
+\tl_new:N     \l__cchess_piece_box_type_tl
+% 棋子类型列表
+\clist_new:N  \g__cchess_piece_box_list_clist
+% 棋盘类型
+\tl_new:N     \l__cchess_board_type_tl
+% 棋盘类型列表
+\clist_new:N  \g__cchess_board_list_clist
+
+% 缩放方式
+\tl_new:N     \l__cchess_resize_method_tl
+% 缩放方式列表
+\clist_new:N  \g__cchess_resize_method_clist
+
+% 棋谱输出宽度
+\dim_new:N    \l__cchess_manual_width_dim
+% 棋谱输出高度
+\dim_new:N    \l__cchess_manual_height_dim
+
+% 棋盘宽度
+\dim_new:N    \l__cchess_board_width_dim
+% 棋盘高度
+\dim_new:N    \l__cchess_board_height_dim
+
+% 棋盘线线宽
+\dim_new:N    \l__cchess_board_linewidth_dim
+% 辅线线宽
+\dim_new:N    \l__cchess_cross_linewidth_dim
+% 辅线间距
+\dim_new:N    \l__cchess_cross_sep_dim
+% 棋子字符正方形外接圆半径
+\dim_new:N    \l__cchess_piece_box_radius_dim
+% 棋子外框线线宽
+\dim_new:N    \l__cchess_box_linewidth_dim
+
+% 棋盘格子尺寸
+\dim_new:N    \gridsize
+% 棋子整体尺寸
+\dim_new:N    \piecesize
 % 棋子字符包围盒尺寸
 \dim_new:N    \charboxsize
 % 棋子字符包围盒尺寸半长
 \dim_new:N    \semicharboxsize
-% 棋子整体尺寸
-\dim_new:N    \piecesize
-% 棋盘格子尺寸
-\dim_new:N    \gridsize
-% 棋子缩放比例
-\tl_new:N    \l__cchess_piece_scale_tl
-% 待处理棋子字符
-\tl_new:N    \l__cchess_pieces_tl
+
+% 临时尺寸变量
+\dim_new:N    \l__cchess_tmpa_dim
+\dim_new:N    \l__cchess_tmpb_dim
+\dim_new:N    \l__cchess_tmpc_dim
+\dim_new:N    \l__cchess_tmpd_dim
+
 % 棋子字符格式
 \tl_new:N    \l__cchess_piece_char_format_tl
 % 棋盘背景图片名称
@@ -463,6 +511,20 @@
 \tl_new:N \l_tmpd_tl
 \tl_new:N \l_tmpe_tl
 
+% ============宏包选项=================
+\keys_define:nn { cchess }
+  {
+    draft .choice:,
+    draft / true  .code:n = { \bool_set_true:N  \g__cchess_draft_bool },
+    draft / false .code:n = { \bool_set_false:N \g__cchess_draft_bool },
+    draft .default:n = true,
+    draft .initial:n = false,
+
+    unknown .code:n = { \msg_error:nn { cchess } { unknown-option } }
+  }
+
+% 将文档类选项传给cchess
+% \ProcessKeysOptions { cchess }
 
 % 棋子盒子由l3draw实现，
 % 棋子外围盒子及缩放设计思路来自zitie宏包
@@ -531,12 +593,14 @@
     \dim_gset:Nn \semicharboxsize
       {
         \fp_to_dim:n { \fp_eval:n { \charboxsize / 2 } }
+        % \charboxsize / 2
       }
 
     % 外接圆半径
     \dim_gset:Nn \l__cchess_piece_box_radius_dim
       {
         \fp_to_dim:n { \fp_eval:n { \charboxsize * sqrt(2)/ 2 } }
+        % \fp_to_dim:n { \fp_eval:n { \charboxsize * 0.707106781 } }
       }
   }
 
@@ -579,17 +643,6 @@
 % 定义字符边框盒子类型内部函数
 % 无边框
 \__cchess_new_piece_box_construct:nn { none } { }
-
-% 填充外接圆
-\__cchess_new_piece_box_private_construct:nn { __outerfilledcircle }
-  {
-    \draw_scope_begin:
-      \color_fill:n { lowerbgboxfill }
-      \draw_path_circle:nn { \semicharboxsize, \semicharboxsize }
-        { \l__cchess_piece_box_radius_dim*#1 }
-      \draw_path_use_clear:n { fill }
-    \draw_scope_end:
-  }
 
 % 底层填充外接圆
 \__cchess_new_piece_box_private_construct:nn { __outerlowerfilledcircle }
@@ -1067,6 +1120,24 @@
   }
 
 % 无兵、炮标志全棋盘
+\__cchess_new_board_private_construct:nn { __none }
+  {
+    \hcoffin_set:Nn \l_tmpa_coffin
+      {
+        \__cchess_board_type_c:n { __semiboard } {#1} {#2}
+      }
+    % 下半部
+    \draw_coffin_use:Nnn \l_tmpa_coffin { l } { b }
+
+    % 上半部
+    \draw_path_scope_begin:
+      \draw_transform_shift:n { \gridsize * 8, \gridsize * 9 }
+      \draw_transform_rotate:n { 180 }
+      \draw_coffin_use:Nnn \l_tmpa_coffin { l } { b }
+    \draw_path_scope_end:
+  }
+
+% 无兵、炮标志全棋盘
 \__cchess_new_board_construct:nn { x }
   {
     \hcoffin_set:Nn \l_tmpa_coffin
@@ -1326,30 +1397,29 @@
                        } ,
     gridsize .initial:n = 10mm ,
     % 棋盘类型
-    boardtype .code:n = { \exp_args:NNx \clist_if_in:NnTF
-                            \g__cchess_board_list_clist {#1}
+    boardtype .code:n = { \exp_args:NNx \clist_if_in:NnTF \g__cchess_board_list_clist {#1}
                             { \tl_set:Nx \l__cchess_board_type_tl {#1} }
                             { \msg_error:nnx { cchess } { board-exists } {#1} }
                         },
     % 棋盘线线宽
     boardlinewd .code:n = { \dim_set:Nn \l__cchess_board_linewidth_dim {#1}
-                               % 九宫线与象位线线宽
-                               \dim_gset:Nn \l__cchess_cross_linewidth_dim
-                                 {
-                                   \fp_to_dim:n
-                                     {
-                                       \fp_eval:n { \l__cchess_board_linewidth_dim * 0.50 }
-                                     }
-                                 }
-                               % 炮兵位置线与棋盘线间距
-                               \dim_gset:Nn \l__cchess_cross_sep_dim
-                                 {
-                                   \fp_to_dim:n
-                                     {
-                                       \fp_eval:n { \l__cchess_board_linewidth_dim * 1.80 }
-                                     }
-                                 }
-                        },
+                            % 九宫线与象位线线宽
+                            \dim_gset:Nn \l__cchess_cross_linewidth_dim
+                              {
+                                \fp_to_dim:n
+                                  {
+                                    \fp_eval:n { \l__cchess_board_linewidth_dim * 0.50 }
+                                  }
+                              }
+                            % 炮兵位置线与棋盘线间距
+                            \dim_gset:Nn \l__cchess_cross_sep_dim
+                              {
+                                \fp_to_dim:n
+                                  {
+                                    \fp_eval:n { \l__cchess_board_linewidth_dim * 1.80 }
+                                  }
+                              }
+                          },
     boardlinewd .initial:n = 0.4pt ,
 
     % 棋盘线颜色
@@ -1361,29 +1431,14 @@
     boardbg .tl_set:N  = \l__cchess_board_background_tl ,
     boardbg .initial:n = {} ,
 
-    % 缩放方式
-    resize    .code:n = { \exp_args:NNx \clist_if_in:NnTF
-                            \g__cchess_resize_method_clist {#1}
-                            { \tl_set:Nx \l__cchess_resize_method_tl {#1} }
-                            { \msg_error:nnx { cchess } { resize-method } {#1} }
-                        },
-    % 缩放参数
-    xscale .tl_set:N = \l__cchess_x_scale_tl ,
-    xscale .initial:n = 1 ,
-    yscale .tl_set:N = \l__cchess_y_scale_tl ,
-    yscale .initial:n = 1 ,
-    scale  .meta:n = { xscale = #1 , yscale = #1 } ,
-    width  .dim_set:N = \l__cchess_manual_width_dim ,
-    height .dim_set:N = \l__cchess_manual_height_dim ,
-
     % 设置棋子字符
     piecechar .code:n    = { \__cchess_piece_char_setup:nn #1 },
     piecechar .initial:n = {K}{\c__cchess_K_tl} ,
 
     % 字符格式
     piecefont .code:n = { \tl_set:Nn \l__cchess_piece_char_format_tl {#1}
-                        \__cchess_calc_piece_box_size:
-                     },
+                          \__cchess_calc_piece_box_size:
+                        },
 
     % 边框类型
     piecetype .code:n = { \exp_args:NNx \clist_if_in:NnTF
@@ -1397,85 +1452,85 @@
     boxlinewd .initial:n = 0.4pt ,
 
     % 边框线颜色
-    boxcolor  .code:n = { \__cchess_color_select:nn { cchesspieceboxcolor } {#1} } ,
+    boxcolor  .code:n    = { \__cchess_color_select:nn { cchesspieceboxcolor } {#1} } ,
     boxcolor  .initial:n = black ,
-    boxcolor* .code:n = { \__cchess_color_select:nnn { cchesspieceboxcolor } #1 } ,
+    boxcolor* .code:n    = { \__cchess_color_select:nnn { cchesspieceboxcolor } #1 } ,
     % 字符颜色
-    redpiece  .code:n = { \__cchess_color_select:nn { cchessredpiececolor } {#1} } ,
+    redpiece  .code:n    = { \__cchess_color_select:nn { cchessredpiececolor } {#1} } ,
     redpiece  .initial:n = red ,
-    redpiece* .code:n = { \__cchess_color_select:nnn { cchessredpiececolor } #1 } ,
-    blkpiece  .code:n = { \__cchess_color_select:nn { cchessblkpiececolor } {#1} } ,
+    redpiece* .code:n    = { \__cchess_color_select:nnn { cchessredpiececolor } #1 } ,
+    blkpiece  .code:n    = { \__cchess_color_select:nn { cchessblkpiececolor } {#1} } ,
     blkpiece  .initial:n = black ,
-    blkpiece* .code:n = { \__cchess_color_select:nnn { cchessblkpiececolor } #1 } ,
+    blkpiece* .code:n    = { \__cchess_color_select:nnn { cchessblkpiececolor } #1 } ,
 
     % 棋子背景底层填充颜色
     lower  .code:n = { \exp_args:Nx \tl_if_empty:nTF {#1}
-                                  {
-                                    \__cchess_color_select:nn { lowerbgboxfill }
-                                      { yellow!70!red }
-                                    \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
-                                      { \color_fill:n { yellow!70!red } }
-                                  }{ \__cchess_color_select:nn { lowerbgboxfill } { #1 }
-                                    \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
-                                      { \color_fill:n { #1 } }
-                                  }
-                               } ,
+                         {
+                           \__cchess_color_select:nn { lowerbgboxfill }
+                             { yellow!70!red }
+                           \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
+                             { \color_fill:n { yellow!70!red } }
+                         }{ \__cchess_color_select:nn { lowerbgboxfill } { #1 }
+                           \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
+                             { \color_fill:n { #1 } }
+                         }
+                     } ,
     lower  .initial:n = {} ,
 
     % 无反色时上层盒子背景填充颜色
     donut  .code:n = { \exp_args:Nx \tl_if_empty:nTF {#1}
-                                {
-                                  \__cchess_color_select:nn { donutboxfill }
-                                    { yellow!80!black }
-                                  \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
-                                    { \color_fill:n { yellow!80!black } }
-                                }{ \__cchess_color_select:nn { donutboxfill } { #1 }
-                                  \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
-                                    { \color_fill:n { #1 } }
-                                }
-                            } ,
+                         {
+                           \__cchess_color_select:nn { donutboxfill }
+                             { yellow!80!black }
+                           \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
+                             { \color_fill:n { yellow!80!black } }
+                         }{ \__cchess_color_select:nn { donutboxfill } { #1 }
+                           \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
+                             { \color_fill:n { #1 } }
+                         }
+                     } ,
     donut  .initial:n = {} ,
 
     % 棋子背景底层填充颜色
     redupper  .code:n = { \exp_args:Nx \tl_if_empty:nTF {#1}
-                                  {
-                                    \__cchess_color_select:nn { redupperbgboxfill }
-                                      { yellow!70!red }
-                                    \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
-                                      { \color_fill:n { yellow!70!red } }
-                                  }{ \__cchess_color_select:nn { redupperbgboxfill } { #1 }
-                                    \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
-                                      { \color_fill:n { #1 } }
-                                  }
-                               } ,
+                            {
+                              \__cchess_color_select:nn { redupperbgboxfill }
+                                { yellow!70!red }
+                              \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
+                                { \color_fill:n { yellow!70!red } }
+                            }{ \__cchess_color_select:nn { redupperbgboxfill } { #1 }
+                              \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
+                                { \color_fill:n { #1 } }
+                            }
+                        } ,
     redupper  .initial:n = {} ,
 
     % 棋子背景底层填充颜色
     blkupper  .code:n = { \exp_args:Nx \tl_if_empty:nTF {#1}
-                                  {
-                                    \__cchess_color_select:nn { blkupperbgboxfill }
-                                      { yellow!70!red }
-                                    \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
-                                      { \color_fill:n { yellow!70!red } }
-                                  }{ \__cchess_color_select:nn { blkupperbgboxfill } { #1 }
-                                    \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
-                                      { \color_fill:n { #1 } }
-                                  }
-                               } ,
+                            {
+                              \__cchess_color_select:nn { blkupperbgboxfill }
+                                { yellow!70!red }
+                              \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
+                                { \color_fill:n { yellow!70!red } }
+                            }{ \__cchess_color_select:nn { blkupperbgboxfill } { #1 }
+                              \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
+                                { \color_fill:n { #1 } }
+                            }
+                        } ,
     blkupper  .initial:n = {} ,
 
     % 盒子阴影填充颜色
     shadow  .code:n = { \exp_args:Nx \tl_if_empty:nTF {#1}
-                               {
-                                 \__cchess_color_select:nn { shadowboxfill }
-                                   { black!35!white }
-                                 \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
-                                   { \color_fill:n { black!35!white } }
-                               }{ \__cchess_color_select:nn { shadowboxfill } { #1 }
-                                 \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
-                                   { \color_fill:n { #1 } }
-                               }
-                            } ,
+                          {
+                            \__cchess_color_select:nn { shadowboxfill }
+                              { black!35!white }
+                            \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
+                              { \color_fill:n { black!35!white } }
+                          }{ \__cchess_color_select:nn { shadowboxfill } { #1 }
+                            \cs_set_nopar:Npn \__cchess_aux_color_boxfill:
+                              { \color_fill:n { #1 } }
+                          }
+                       } ,
     shadow  .initial:n = {} ,
 
     % 笔画参数
@@ -1485,14 +1540,6 @@
       { none, solid, white, bold, invisible }
       { \int_set_eq:NN \l__cchess_charstroke_type_int \l_keys_choice_int },
     charstroke .initial:n = bold,
-
-    % 打谱环境交叉引用标签
-    label .tl_gset:N  = \l__cchess_setman_label_tl ,
-    label .initial:n = {} ,
-
-    % 每行棋谱步数
-    mansperline .tl_gset:N  = \l__cchess_mans_per_line_int ,
-    mansperline .initial:n = 2 ,
 
     unknown .code:n = { \msg_error:nn { cchess } { unknown-option } }
   }
@@ -1504,13 +1551,67 @@
     piecefont = \kaishu,
     piecetype = ooo,
     boardtype = x+tn,
-    resize    = none,
+  }
+
+\ProcessKeysOptions { cchess }
+
+% key_value选项设计(打谱man)
+\keys_define:nn { cchess / man }
+  {
+    % 打谱环境交叉引用标签
+    label .tl_gset:N  = \l__cchess_setman_label_tl ,
+    label .initial:n = {} ,
+
+    % 每行棋谱步数
+    nums .tl_gset:N  = \l__cchess_mans_per_line_int ,
+    nums .initial:n = 2 ,
+
+    unknown .code:n = { \msg_error:nn { cchess } { unknown-man-option } }
+  }
+\msg_new:nnn { cchess } { unknown-man-option }
+  { package~ manual~ option~ "\l_keys_key_tl"~ is~ unknown. }
+
+% key_value选项设计(缩放resize)
+\keys_define:nn { cchess / resize }
+  {
+    % 缩放方式
+    type    .code:n = { \exp_args:NNx \clist_if_in:NnTF \g__cchess_resize_method_clist {#1}
+                            { \tl_set:Nx \l__cchess_resize_method_tl {#1} }
+                            { \msg_error:nnx { cchess } { resize-method } {#1} }
+                        },
+    % 缩放参数
+    xscale .tl_set:N  = \l__cchess_x_scale_tl ,
+    xscale .initial:n = 1 ,
+    yscale .tl_set:N  = \l__cchess_y_scale_tl ,
+    yscale .initial:n = 1 ,
+    scale  .meta:n    = { xscale = #1 , yscale = #1 } ,
+    width  .dim_set:N = \l__cchess_manual_width_dim ,
+    height .dim_set:N = \l__cchess_manual_height_dim ,
+
+    unknown .code:n = { \msg_error:nn { cchess } { unknown-resize-option } }
+  }
+\msg_new:nnn { cchess } { unknown-resize-option }
+  { package~ resize~ option~ "\l_keys_key_tl"~ is~ unknown. }
+
+\keys_set:nn { cchess / resize }
+  {
+    type = none,
   }
 
 % 选项设置用户接口
 \NewDocumentCommand \cchessset { m }
   {
-    \keys_set:nn { cchess } {#1}
+    \IfNoValueF { #1}
+      {
+        \keys_set:nn { cchess } { #1 }
+        \bool_if:NF \g__cchess_draft_bool
+          {
+            % 构建棋盘
+            \__cchess_board_construct:
+            % 构建红黑各9个棋子
+            \__cchess_pieces_construct:
+          }
+      }
   }
 
 % =============创建棋子coffins=============
@@ -1561,10 +1662,16 @@
     % 按指定颜色和格式构造棋子字符盒子容器
     \hcoffin_gset:Nn \l__cchess_box_coffin
       {
-        \color_select:n { cchesspiececolor }
-        \tl_use:N \l__cchess_piece_char_format_tl
-        % 笔划处理
-        \__cchess_pieces_stroke_construct:n { #1 }
+        \bool_if:NTF \g__cchess_draft_bool
+          {
+            \color_select:n { cchesspiececolor }
+            #1
+          }{
+            \color_select:n { cchesspiececolor }
+            \tl_use:N \l__cchess_piece_char_format_tl
+            % 笔划处理
+            \__cchess_pieces_stroke_construct:n { #1 }
+          }
       }
 
     % 构造构造棋子字符盒子容器边框
@@ -1574,16 +1681,22 @@
 % 字符盒子及边框组合盒子容器构造函数
 \cs_new:Npn \__cchess_single_box_construct:
   {
-    % 绘制字符外框并拼装结果
-    \draw_begin:
-      \draw_linewidth:n { \l__cchess_box_linewidth_dim }
+    \bool_if:NTF \g__cchess_draft_bool
+      {
+        \coffin_typeset:cnnnn { l__cchess_box_coffin }
+          { l } { b } { 0pt } { 0pt }
+      }{
+        % 绘制字符外框并拼装结果
+        \draw_begin:
+          \draw_linewidth:n { \l__cchess_box_linewidth_dim }
 
-      \draw_path_scope_begin:
-        \__cchess_piece_box_type_c:n { \l__cchess_piece_box_type_tl } { 1.0 }
-        \draw_transform_shift:n {\charboxsize / 2.0, \charboxsize / 2.0 }
-        \draw_coffin_use:Nnn \l__cchess_box_coffin { hc } { vc }
-      \draw_path_scope_end:
-    \draw_end:
+          \draw_path_scope_begin:
+            \__cchess_piece_box_type_c:n { \l__cchess_piece_box_type_tl } { 1.0 }
+            \draw_transform_shift:n {\charboxsize / 2.0, \charboxsize / 2.0 }
+            \draw_coffin_use:Nnn \l__cchess_box_coffin { hc } { vc }
+          \draw_path_scope_end:
+        \draw_end:
+      }
   }
 
 % =============创建棋子占位coffins=============
@@ -1655,12 +1768,15 @@
     \dim_add:Nn \l_tmpa_dim { \piecesize / 2 }
     \dim_add:Nn \l_tmpb_dim { \piecesize / 2 }
 
-    % 构建背景图片coffin
-    \__cchess_board_backgroud_construct:
+    \bool_if:NF \g__cchess_draft_bool
+      {
+        % 构建背景图片coffin
+        \__cchess_board_backgroud_construct:
 
-    % 缩放背景图片coffin
-    \coffin_resize:Nnn \l__cchess_board_background_coffin
-      { \l_tmpa_dim } { \l_tmpb_dim }
+        % 缩放背景图片coffin
+        \coffin_resize:Nnn \l__cchess_board_background_coffin
+          { \l_tmpa_dim } { \l_tmpb_dim }
+      }
 
     % 绘制总边框外线
     \hcoffin_set:Nn \l__cchess_tmpa_coffin
@@ -1690,7 +1806,10 @@
         \draw_begin:
           \draw_path_scope_begin:
             \draw_transform_shift:n { \l_tmpa_dim / 2, \l_tmpa_dim / 2 }
-            \draw_coffin_use:Nnn \l__cchess_board_background_coffin { hc } { vc }
+            \bool_if:NF \g__cchess_draft_bool
+              {
+                \draw_coffin_use:Nnn \l__cchess_board_background_coffin { hc } { vc }
+              }
             \draw_coffin_use:Nnn \l__cchess_tmpa_coffin { hc } { vc }
             \draw_coffin_use:Nnn \l__cchess_tmpb_coffin { hc } { vc }
             \draw_coffin_use:Nnn \l__cchess_manual_coffin { hc } { vc }
@@ -1710,7 +1829,12 @@
           \draw_linewidth:n { \l__cchess_board_linewidth_dim }
 
           \draw_path_scope_begin:
-            \__cchess_board_type_c:n { \l__cchess_board_type_tl } { 1.0 } { 1.0 }
+            \bool_if:NTF \g__cchess_draft_bool
+              {
+                \__cchess_board_type_c:n { x } { 1.0 } { 1.0 }
+              }{
+                \__cchess_board_type_c:n { \l__cchess_board_type_tl } { 1.0 } { 1.0 }
+              }
           \draw_path_scope_end:
         \draw_end:
       }
@@ -1729,8 +1853,8 @@
 % 在正文中排版棋子
 \cs_new:Npn \__cchess_getpiece_handle:nn #1#2
   {
-    % 构建红黑各7个棋子
-    \__cchess_pieces_construct:
+    % 构建红黑各9个棋子
+    % \__cchess_pieces_construct:
 
     % 设置指定格式的基字符盒子
     \hbox_set:Nn \l_tmpa_box { #1 将 }
@@ -1763,15 +1887,21 @@
         { l } { b } { 0pt } { -\l_tmpb_dim }
   }
 
+% 构建棋盘
+\__cchess_board_construct:
+
+% 构建红黑各9个棋子
+\__cchess_pieces_construct:
+
 % =============排版棋谱=============
 % 棋谱排版
 \cs_new:Npn \__cchess_manual_output:n #1
   {
     % 构建棋盘
-    \__cchess_board_construct:
+    % \__cchess_board_construct:
 
-    % 构建红黑各7个棋子
-    \__cchess_pieces_construct:
+    % 构建红黑各9个棋子
+    % \__cchess_pieces_construct:
 
     % 构建棋子画布盒子容器
     \__cchess_board_piece_pos_construct:n { #1 }
@@ -1807,13 +1937,13 @@
 \cs_new:Nn \__cchess_board_output:
   {
     % 创建棋盘
-    \__cchess_board_construct:
+    % \__cchess_board_construct:
 
     % 是否需要棋子
     \bool_if:NT  \l__cchess_board_pieces_bool
       {
-        % 构建红黑各7个棋子
-        \__cchess_pieces_construct:
+        % 构建红黑各9个棋子
+        % \__cchess_pieces_construct:
 
         % 创建32个棋子画布盒子容器
         \__cchess_board_piece_pos_construct:n
@@ -2310,9 +2440,9 @@
 \cs_new:Npn \__cchess_setcchessman_pre_setup:n #1
   {
     % 构建棋盘
-    \__cchess_board_construct:
-    % 构建红黑各7个棋子
-    \__cchess_pieces_construct:
+    % \__cchess_board_construct:
+    % 构建红黑各9个棋子
+    % \__cchess_pieces_construct:
 
     % 删除环境中的代码中的空白
     \tl_set:Nn \l_tmpa_tl { #1 }
