@@ -492,6 +492,12 @@
 对于``|resize|''缩放和``|man|''子选项，只能用于命令与环境选项中，或通过
 \tn{cchessset}命令进行设置。
 
+\textbf{\textsf{注意: }}为提高编译速度，\pkg{chinesechess}宏包会分别根据%
+\tn{cchessset}命令或棋谱排版命令与环境的可选项中的棋盘与棋子相关参数决定
+是否对棋盘或棋子进行重新绘制，因此，前一次的棋盘与棋子外观选项会影响至下
+一次新的外观选项出现。如果需要改变前一次外观选项的影响，可以使用一次棋盘
+或棋子外观相关选项。
+
 \subsection{草稿选项}
 
 \begin{option}{ opt = draft, desc = {= \meta{草稿选项}}, init=false }
@@ -521,13 +527,17 @@
   设置棋盘单元格尺寸。
 \end{option}
 
+  \textbf{\textsf{说明: }}由于在前一个示例中使用了|[draft]|%
+  参数，为恢复棋子外观，需要执行一次棋子相关设置参数。
+
 \begin{SideBySideExample}[frame=single,numbers=left,
                 xrightmargin=.60\linewidth,gobble=2]
   \centering
   % 为便排版，进行缩放
   \cchessset{resize/type=real,
     resize/width=.90\linewidth}
-  \cchessboard[gridsize=15mm]
+  \cchessboard[gridsize=15mm,
+               piecetype=ooo]
 \end{SideBySideExample}
 
 \bigskip
@@ -881,8 +891,6 @@
 
 \bigskip
 
-\cchessset{charstroke=bold}
-
 \subsection{打谱}
 
 打谱参数位于|man|子选项中，可以使用|man={label=test}|或
@@ -904,12 +912,19 @@
 
   该选项只在\tn{printman}命令中起作用。
 
+  \textbf{\textsf{说明: }}由于在前一个示例中使用了|[charstroke=white]|%
+  参数，为恢复棋子外观，需要执行一次棋子相关设置参数。
+
+  但要注意的是|setcchessman*|星号环境并不执行棋子棋盘重构，因此，此处
+  需要在\tn{cchessset}命令中重新设置棋子笔划类型。
+
 \begin{SideBySideExample}[frame=single,numbers=left,
                 xrightmargin=.45\linewidth,gobble=2]
   \centering
     \printman{test}
     % 为便排版，进行缩放
-    \cchessset{resize/type=real,
+    \cchessset{charstroke=bold,
+             resize/type=real,
              resize/width=0.90\linewidth}
     \begin{setcchessman*}[man/label=test]
       % 残局初始化

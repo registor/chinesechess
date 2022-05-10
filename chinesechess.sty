@@ -50,6 +50,7 @@
           % 设置选项
           \keys_set:nn { cchess } { #2 }
 
+          % 有draft参数，需要重构棋子和棋盘
           \tl_if_in:nnT { #2 } { draft }
             {
               % 构建棋盘
@@ -60,11 +61,14 @@
 
           \bool_if:NF \g__cchess_draft_bool
             {
-              \__cchess_option_if_in:nT { #2 }
+              % 构建棋盘
+              \__cchess_board_option_if_in:nT { #2 }
                 {
-                  % 构建棋盘
                   \__cchess_board_construct:
-                  % 构建红黑各9个棋子
+                }
+              % 构建红黑各9个棋子
+              \__cchess_piece_option_if_in:nT { #2 }
+                {
                   \__cchess_pieces_construct:
                 }
             }
@@ -88,6 +92,7 @@
         {
           \keys_set:nn { cchess } { #1 }
 
+          % 有draft参数，需要重构棋子和棋盘
           \tl_if_in:nnT { #1 } { draft }
             {
               % 构建棋盘
@@ -98,11 +103,14 @@
 
           \bool_if:NF \g__cchess_draft_bool
             {
-              \__cchess_option_if_in:nT { #1 }
+              % 构建棋盘
+              \__cchess_board_option_if_in:nT { #1 }
                 {
-                  % 构建棋盘
                   \__cchess_board_construct:
-                  % 构建红黑各9个棋子
+                }
+              % 构建红黑各9个棋子
+              \__cchess_piece_option_if_in:nT { #1 }
+                {
                   \__cchess_pieces_construct:
                 }
             }
@@ -222,6 +230,7 @@
         {
           \keys_set:nn { cchess } { #1 }
 
+          % 有draft参数，需要重构棋子和棋盘
           \tl_if_in:nnT { #1 } { draft }
             {
               % 构建棋盘
@@ -232,11 +241,14 @@
 
           \bool_if:NF \g__cchess_draft_bool
             {
-              \__cchess_option_if_in:nT { #1 }
+              % 构建棋盘
+              \__cchess_board_option_if_in:nT { #1 }
                 {
-                  % 构建棋盘
                   \__cchess_board_construct:
-                  % 构建红黑各9个棋子
+                }
+              % 构建红黑各9个棋子
+              \__cchess_piece_option_if_in:nT { #1 }
+                {
                   \__cchess_pieces_construct:
                 }
             }
@@ -1635,31 +1647,58 @@
   }
 
 % =============判断选项是否存在=============
-\bool_new:N \g__cchess_is_option_bool
 
-% gridsize,boardtype,boardlinewd,boardlinecolor,boardbg,
-% piecechar,piecefont,piecetype,boxlinewd,boxcolor,redpiece,blkpiece,
-% lower,donut,redupper,blkupper,shadow,charstroke
-\cs_new:Npn \__cchess_option_if_in:n #1
+% 状态记录bool变量
+\bool_new:N \g__cchess_is_board_option_bool
+\bool_new:N \g__cchess_is_piece_option_bool
+
+% 判断是否有棋盘外观参数
+\cs_new:Npn \__cchess_board_option_if_in:n #1
   {
-    \bool_set_false:N \g__cchess_is_option_bool
-    \clist_map_inline:nn
+    \bool_set_false:N \g__cchess_is_board_option_bool
+    \clist_map_inline:nn { board,gridsize }
       {
-        piece,lower,donut,upper,shadow,board,box,gridsize,charstroke
-      }{
         \tl_if_in:nnT { #1 } { ##1 }
           {
-            \bool_set_true:N \g__cchess_is_option_bool
+            \bool_set_true:N \g__cchess_is_board_option_bool
             \clist_map_break:
           }
       }
   }
 
-\prg_set_conditional:Npnn \__cchess_option_if_in:n #1 { p, T, F, TF }
+% 判断是否有棋子外观参数
+\cs_new:Npn \__cchess_piece_option_if_in:n #1
   {
-    \__cchess_option_if_in:n { #1 }
+    \bool_set_false:N \g__cchess_is_piece_option_bool
+    \clist_map_inline:nn { piece,lower,donut,upper,shadow,box,charstroke }
+      {
+        \tl_if_in:nnT { #1 } { ##1 }
+          {
+            \bool_set_true:N \g__cchess_is_piece_option_bool
+            \clist_map_break:
+          }
+      }
+  }
 
-    \bool_if:NTF \g__cchess_is_option_bool
+% 棋盘参数判断
+\prg_set_conditional:Npnn \__cchess_board_option_if_in:n #1 { p, T, F, TF }
+  {
+    \__cchess_board_option_if_in:n { #1 }
+
+    \bool_if:NTF \g__cchess_is_board_option_bool
+      {
+        \prg_return_true:
+      }{
+        \prg_return_false:
+      }
+  }
+
+% 棋子参数判断
+\prg_set_conditional:Npnn \__cchess_piece_option_if_in:n #1 { p, T, F, TF }
+  {
+    \__cchess_piece_option_if_in:n { #1 }
+
+    \bool_if:NTF \g__cchess_is_piece_option_bool
       {
         \prg_return_true:
       }{
@@ -1674,6 +1713,7 @@
       {
         \keys_set:nn { cchess } { #1 }
 
+        % 有draft参数，需要重构棋子和棋盘
         \tl_if_in:nnT { #1 } { draft }
           {
             % 构建棋盘
@@ -1684,11 +1724,14 @@
 
         \bool_if:NF \g__cchess_draft_bool
           {
-            \__cchess_option_if_in:nT { #1 }
+            % 构建棋盘
+            \__cchess_board_option_if_in:nT { #1 }
               {
-                % 构建棋盘
                 \__cchess_board_construct:
-                % 构建红黑各9个棋子
+              }
+            % 构建红黑各9个棋子
+            \__cchess_piece_option_if_in:nT { #1 }
+              {
                 \__cchess_pieces_construct:
               }
           }
@@ -1758,6 +1801,9 @@
     % 构造构造棋子字符盒子容器边框
     \__cchess_single_box_construct:
   }
+% gridsize,boardtype,boardlinewd,boardlinecolor,boardbg,
+% piecechar,piecefont,piecetype,boxlinewd,boxcolor,redpiece,blkpiece,
+% lower,donut,redupper,blkupper,shadow,charstroke
 
 % 字符盒子及边框组合盒子容器构造函数
 \cs_new:Npn \__cchess_single_box_construct:
