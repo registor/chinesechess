@@ -49,12 +49,24 @@
         {
           % 设置选项
           \keys_set:nn { cchess } { #2 }
-          \bool_if:NF \g__cchess_draft_bool
+
+          \tl_if_in:nnT { #2 } { draft }
             {
               % 构建棋盘
               \__cchess_board_construct:
               % 构建红黑各9个棋子
               \__cchess_pieces_construct:
+            }
+
+          \bool_if:NF \g__cchess_draft_bool
+            {
+              \__cchess_option_if_in:nT { #2 }
+                {
+                  % 构建棋盘
+                  \__cchess_board_construct:
+                  % 构建红黑各9个棋子
+                  \__cchess_pieces_construct:
+                }
             }
         }
       \__cchess_board_output:
@@ -75,12 +87,24 @@
       \IfNoValueF { #1}
         {
           \keys_set:nn { cchess } { #1 }
-          \bool_if:NF \g__cchess_draft_bool
+
+          \tl_if_in:nnT { #1 } { draft }
             {
               % 构建棋盘
               \__cchess_board_construct:
               % 构建红黑各9个棋子
               \__cchess_pieces_construct:
+            }
+
+          \bool_if:NF \g__cchess_draft_bool
+            {
+              \__cchess_option_if_in:nT { #1 }
+                {
+                  % 构建棋盘
+                  \__cchess_board_construct:
+                  % 构建红黑各9个棋子
+                  \__cchess_pieces_construct:
+                }
             }
         }
       \__cchess_manual_output:n { #2 }
@@ -197,12 +221,24 @@
       \IfNoValueF { #1}
         {
           \keys_set:nn { cchess } { #1 }
-          \bool_if:NF \g__cchess_draft_bool
+
+          \tl_if_in:nnT { #1 } { draft }
             {
               % 构建棋盘
               \__cchess_board_construct:
               % 构建红黑各9个棋子
               \__cchess_pieces_construct:
+            }
+
+          \bool_if:NF \g__cchess_draft_bool
+            {
+              \__cchess_option_if_in:nT { #1 }
+                {
+                  % 构建棋盘
+                  \__cchess_board_construct:
+                  % 构建红黑各9个棋子
+                  \__cchess_pieces_construct:
+                }
             }
         }
       \__cchess_setcchessman_pre_setup:n { #2 }
@@ -703,8 +739,8 @@
 % 填充外接圆叠加外接圆边框
 \__cchess_new_piece_box_construct:nn { o }
   {
-    \__cchess_piece_box_type_c:n { __outerupperfilledcircle } {#1}
-    \__cchess_piece_box_type_c:n { __outercirclebox } {#1}
+    \__cchess_piece_box_type_c:n { __outerupperfilledcircle } {0.82}
+    \__cchess_piece_box_type_c:n { __outercirclebox } {0.82}
   }
 
 % 填充外接圆叠加同心82%外接圆边框
@@ -1598,18 +1634,63 @@
     type = none,
   }
 
+% =============判断选项是否存在=============
+\bool_new:N \g__cchess_is_option_bool
+
+% gridsize,boardtype,boardlinewd,boardlinecolor,boardbg,
+% piecechar,piecefont,piecetype,boxlinewd,boxcolor,redpiece,blkpiece,
+% lower,donut,redupper,blkupper,shadow,charstroke
+\cs_new:Npn \__cchess_option_if_in:n #1
+  {
+    \bool_set_false:N \g__cchess_is_option_bool
+    \clist_map_inline:nn
+      {
+        piece,lower,donut,upper,shadow,board,box,gridsize,charstroke
+      }{
+        \tl_if_in:nnT { #1 } { ##1 }
+          {
+            \bool_set_true:N \g__cchess_is_option_bool
+            \clist_map_break:
+          }
+      }
+  }
+
+\prg_set_conditional:Npnn \__cchess_option_if_in:n #1 { p, T, F, TF }
+  {
+    \__cchess_option_if_in:n { #1 }
+
+    \bool_if:NTF \g__cchess_is_option_bool
+      {
+        \prg_return_true:
+      }{
+        \prg_return_false:
+      }
+  }
+
 % 选项设置用户接口
 \NewDocumentCommand \cchessset { m }
   {
     \IfNoValueF { #1}
       {
         \keys_set:nn { cchess } { #1 }
-        \bool_if:NF \g__cchess_draft_bool
+
+        \tl_if_in:nnT { #1 } { draft }
           {
             % 构建棋盘
             \__cchess_board_construct:
             % 构建红黑各9个棋子
             \__cchess_pieces_construct:
+          }
+
+        \bool_if:NF \g__cchess_draft_bool
+          {
+            \__cchess_option_if_in:nT { #1 }
+              {
+                % 构建棋盘
+                \__cchess_board_construct:
+                % 构建红黑各9个棋子
+                \__cchess_pieces_construct:
+              }
           }
       }
   }
